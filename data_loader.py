@@ -4,29 +4,47 @@ from tkinter.filedialog import askopenfilename
 
 def load_data():
     """
-    Allow the user to select a JSON file and load the data.
+    Allow the user to select a file (CSV, Excel, JSON) and load it into a Pandas DataFrame.
     
     Returns:
-        pd.DataFrame: Loaded data as a pandas DataFrame, or None if there was an error.
+        pd.DataFrame: Loaded data, or None if there was an error.
     """
     try:
         root = Tk()
         root.withdraw()
-        print("Please select a JSON file...")
+        print("Please select a data file...")
 
-        file_path = askopenfilename(filetypes=[("JSON Files", "*.json")], title="Select JSON File")
+        file_path = askopenfilename(
+            filetypes=[
+                ("All Supported Files", "*.csv;*.xlsx;*.xls;*.json"),
+                ("CSV Files", "*.csv"),
+                ("Excel Files", "*.xlsx;*.xls"),
+                ("JSON Files", "*.json")
+            ],
+            title="Select Data File"
+        )
 
         if not file_path:
             print("No file was selected. Exiting.")
             return None
 
-        data = pd.read_json(file_path)
+        # Detect file extension and read accordingly
+        if file_path.endswith(".csv"):
+            data = pd.read_csv(file_path)
+        elif file_path.endswith((".xlsx", ".xls")):
+            data = pd.read_excel(file_path)
+        elif file_path.endswith(".json"):
+            try:
+                data = pd.read_json(file_path)
+            except ValueError:
+                print("Standard JSON loading failed. Trying JSON Lines format...")
+                data = pd.read_json(file_path, lines=True)
+        else:
+            print("Unsupported file format. Please select a CSV, Excel, or JSON file.")
+            return None
+
         print(f"Data loaded successfully from {file_path}.")
         return data
-
-    except ValueError as ve:
-        print(f"ValueError: Unable to parse JSON. Ensure the file is in proper JSON format. {ve}")
-        return None
 
     except FileNotFoundError:
         print("FileNotFoundError: The selected file was not found.")
